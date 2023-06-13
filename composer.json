@@ -1,0 +1,27 @@
+{
+	"name": "stefanfroemken/sf-join",
+	"type": "typo3-cms-extension",
+	"description": "SF DB JOIN",
+	"homepage": "https://www.typo3lexikon.de",
+	"license": ["GPL-2.0-or-later"],
+	"authors": [
+		{
+			"name": "Stefan Froemken",
+			"email": "froemken@gmail.com",
+			"role": "Developer"
+		}
+	],
+	"require": {
+		"typo3/cms-core": "^12.3"
+	},
+	"autoload": {
+		"psr-4": {
+			"StefanFroemken\\SfJoin\\": "Classes/"
+		}
+	},
+	"extra": {
+		"typo3/cms": {
+			"extension-key": "sf_join"
+		}
+	}
+}

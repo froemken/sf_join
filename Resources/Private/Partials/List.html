@@ -1,0 +1,20 @@
+<html lang="en"
+      xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      data-namespace-typo3-fluid="true">
+
+<ul>
+    <f:for each="{products}" as="product">
+        <li>
+            {product.title}.
+            <f:if condition="{product.categories}">
+                Cat: {product.categories -> f:count()}
+                <ul>
+                    <f:for each="{product.categories}" as="category">
+                        <li>{category.title}</li>
+                    </f:for>
+                </ul>
+            </f:if>
+        </li>
+    </f:for>
+</ul>
+</html>
