@@ -1,4 +1,4 @@
-# sfjoin
+# sf_join
 
 This is just a TYPO3 demo extension to show you possibilities on how to get records from database by TYPO3 API.
 
