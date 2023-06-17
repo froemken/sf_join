@@ -20,9 +20,11 @@ use TYPO3\CMS\Core\Database\Query\Restriction\FrontendRestrictionContainer;
 use TYPO3\CMS\Core\Domain\Repository\PageRepository;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
+use TYPO3\CMS\Extbase\Persistence\Generic\Mapper\DataMapper;
 use TYPO3\CMS\Extbase\Persistence\Generic\Query;
 use TYPO3\CMS\Extbase\Persistence\Generic\QuerySettingsInterface;
 use TYPO3\CMS\Extbase\Persistence\Generic\Storage\Typo3DbQueryParser;
+use TYPO3\CMS\Extbase\Persistence\ObjectStorage;
 use TYPO3\CMS\Extbase\Persistence\QueryInterface;
 use TYPO3\CMS\Extbase\Persistence\QueryResultInterface;
 use TYPO3\CMS\Extbase\Persistence\Repository;
@@ -283,7 +285,7 @@ class ProductRepository extends Repository
         return $products;
     }
 
-    public function findWithCategoryContentObject(): array
+    public function findWithCategoryContentObject(): ObjectStorage
     {
         $query = $this->createQuery();
         $cObj = $this->configurationManager->getContentObject();
@@ -308,21 +310,19 @@ class ProductRepository extends Repository
         // BUT: The ORDER BY only sorts products in default language.
         // So, after translation the records are not sorted anymore
 
-        // We have to fetch each table on our own:
-        foreach ($products as &$product) {
-            $product['categories'] = $cObj->getRecords(
-                'sys_category',
-                [
-                    'pidInList' => 'root,' . implode(',', $query->getQuerySettings()->getStoragePageIds()),
-                    'selectFields' => 'sys_category.*',
-                    'orderBy' => 'sys_category.title ASC',
-                    'join' => 'sys_category_record_mm ON {#sys_category_record_mm.tablenames} = "tx_sfjoin_domain_model_product" AND {#sys_category_record_mm.fieldname} = "categories" AND {#sys_category_record_mm.uid_local} = {#sys_category.uid}',
-                    'where' => 'sys_category_record_mm.uid_foreign = ' . $product['uid'],
-                ]
-            );
+        $dataMapper = GeneralUtility::makeInstance(DataMapper::class);
+        $categoryRepository = GeneralUtility::makeInstance(CategoryRepository::class);
+        $objectStorage = new ObjectStorage();
+
+        /** @var Product $product */
+        foreach ($dataMapper->map(Product::class, $products) as $product) {
+            $product->setCategories($categoryRepository->getAllCategoriesByProductUid(
+                $product->_getProperty('_localizedUid') ?: $product->getUid()
+            ));
+            $objectStorage->attach($product);
         }
 
-        return $products;
+        return $objectStorage;
     }
 
     public function findWithCategoryQueryBuilderExtbaseSolution(): QueryResultInterface
