@@ -2,12 +2,12 @@
 
 return [
     'ctrl' => [
-        'title' => 'Products',
-        'label' => 'title',
+        'title' => 'Property',
+        'label' => 'name',
         'tstamp' => 'tstamp',
         'crdate' => 'crdate',
         'cruser_id' => 'cruser_id',
-        'default_sortby' => 'ORDER BY title',
+        'default_sortby' => 'ORDER BY name',
         'versioningWS' => true,
         'origUid' => 't3_origuid',
         'languageField' => 'sys_language_uid',
@@ -19,14 +19,13 @@ return [
             'starttime' => 'starttime',
             'endtime' => 'endtime',
         ],
-        'searchFields' => 'title',
+        'searchFields' => 'name, value',
     ],
     'types' => [
         '0' => [
-            'showitem' => 'hidden, sys_language_uid, l10n_parent, l10n_diffsource, title, properties,
+            'showitem' => 'hidden, sys_language_uid, l10n_parent, l10n_diffsource, name, value,
                 --div--;LLL:EXT:frontend/Resources/Private/Language/locallang_tca.xlf:pages.tabs.access,
-                --palette--;LLL:EXT:frontend/Resources/Private/Language/locallang_tca.xlf:pages.palettes.access;access,
-                --div--;LLL:EXT:core/Resources/Private/Language/locallang_tca.xlf:sys_category.tabs.category, categories',
+                --palette--;LLL:EXT:frontend/Resources/Private/Language/locallang_tca.xlf:pages.palettes.access;access',
         ],
     ],
     'palettes' => [
@@ -61,8 +60,8 @@ return [
                 'items' => [
                     ['', 0],
                 ],
-                'foreign_table' => 'tx_sfjoin_domain_model_product',
-                'foreign_table_where' => 'AND tx_sfjoin_domain_model_product.pid=###CURRENT_PID### AND tx_sfjoin_domain_model_product.sys_language_uid IN (-1,0)',
+                'foreign_table' => 'tx_sfjoin_domain_model_property',
+                'foreign_table_where' => 'AND tx_sfjoin_domain_model_property.pid=###CURRENT_PID### AND tx_sfjoin_domain_model_property.sys_language_uid IN (-1,0)',
                 'default' => 0,
             ],
         ],
@@ -122,51 +121,22 @@ return [
             'l10n_mode' => 'exclude',
             'l10n_display' => 'defaultAsReadonly',
         ],
-        'title' => [
+        'name' => [
             'exclude' => true,
-            'label' => 'Title',
+            'label' => 'Name',
             'config' => [
                 'type' => 'input',
                 'size' => 30,
                 'eval' => 'trim,required',
             ],
         ],
-        'categories' => [
+        'value' => [
             'exclude' => true,
-            'label' => 'LLL:EXT:core/Resources/Private/Language/locallang_tca.xlf:sys_category.categories',
+            'label' => 'Value',
             'config' => [
-                'type' => 'select',
-                'renderType' => 'selectTree',
-                'foreign_table' => 'sys_category',
-                'foreign_table_where' => ' AND sys_category.sys_language_uid IN (-1, 0)',
-                'foreign_sortby' => 'title ASC',
-                'MM' => 'sys_category_record_mm',
-                'MM_match_fields' => [
-                    'fieldname' => 'categories',
-                    'tablenames' => 'tx_sfjoin_domain_model_product',
-                ],
-                'MM_opposite_field' => 'items',
-                'treeConfig' => [
-                    'parentField' => 'parent',
-                    'appearance' => [
-                        'showHeader' => true,
-                        'expandAll' => true,
-                        'maxLevels' => 99,
-                    ],
-                ],
-                'size' => 20,
-                'maxitems' => 9999,
-            ],
-        ],
-        'properties' => [
-            'exclude' => true,
-            'label' => 'Properties',
-            'config' => [
-                'type' => 'inline',
-                'foreign_table' => 'tx_sfjoin_domain_model_property',
-                'foreign_table_where' => ' AND sys_category.sys_language_uid IN (-1, 0)',
-                'foreign_field' => 'product',
-                'maxitems' => 20,
+                'type' => 'input',
+                'size' => 30,
+                'eval' => 'trim,required',
             ],
         ],
     ],
