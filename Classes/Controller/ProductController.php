@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace StefanFroemken\SfJoin\Controller;
 
 use Psr\Http\Message\ResponseInterface;
+use StefanFroemken\SfJoin\Domain\Model\Product;
 use StefanFroemken\SfJoin\Domain\Repository\ProductRepository;
 use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
@@ -28,15 +29,17 @@ class ProductController extends ActionController
         $this->productRepository = $productRepository;
     }
 
-    public function listExtbaseAction(): ResponseInterface
+    public function listExtbaseAction(Product $product = null): ResponseInterface
     {
         $this->view->assign('products', $this->productRepository->findWithCategoryExtbase());
+        // $this->view->assign('products', $this->productRepository->findWithCategoryExtbaseSolution());
         return new HtmlResponse($this->view->render());
     }
 
     public function listQueryBuilderExtbaseAction(): ResponseInterface
     {
         $this->view->assign('products', $this->productRepository->findWithCategoryQueryBuilderExtbase());
+        // $this->view->assign('products', $this->productRepository->findWithCategoryQueryBuilderExtbaseSolution());
         return new HtmlResponse($this->view->render());
     }
 

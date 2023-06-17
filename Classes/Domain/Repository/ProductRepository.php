@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace StefanFroemken\SfJoin\Domain\Repository;
 
+use StefanFroemken\SfJoin\Domain\Model\Product;
 use TYPO3\CMS\Core\Context\LanguageAspect;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -21,10 +22,10 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
 use TYPO3\CMS\Extbase\Persistence\Generic\Query;
 use TYPO3\CMS\Extbase\Persistence\Generic\QuerySettingsInterface;
+use TYPO3\CMS\Extbase\Persistence\Generic\Storage\Typo3DbQueryParser;
 use TYPO3\CMS\Extbase\Persistence\QueryInterface;
 use TYPO3\CMS\Extbase\Persistence\QueryResultInterface;
 use TYPO3\CMS\Extbase\Persistence\Repository;
-use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
 
 /**
  * Repo for products
@@ -125,7 +126,7 @@ class ProductRepository extends Repository
         // BUT: This GROUP BY breaks on ONLY_FULL_GROUP_BY configured servers.
 
         // On ONLY_FULL_GROUP_BY configured servers you have to add ALL columns from SELECT part
-        $queryBuilder->groupBy('p.uid', 'p.pid', 'p.tstamp', 'p.tstamp', 'p.crdate', 'p.deleted', 'p.hidden', 'p.starttime', 'p.endtime', 'p.sys_language_uid', 'p.l10n_parent', 'p.l10n_state', 'p.t3_origuid', 'p.l10n_diffsource', 'p.t3ver_oid', 'p.t3ver_wsid', 'p.t3ver_state', 'p.t3ver_stage', 'p.title', 'p.categories');
+        $queryBuilder->groupBy('p.uid', 'p.pid', 'p.tstamp', 'p.tstamp', 'p.crdate', 'p.deleted', 'p.hidden', 'p.starttime', 'p.endtime', 'p.sys_language_uid', 'p.l10n_parent', 'p.l10n_state', 'p.t3_origuid', 'p.l10n_diffsource', 'p.t3ver_oid', 'p.t3ver_wsid', 'p.t3ver_state', 'p.t3ver_stage', 'p.title', 'p.categories', 'p.properties');
         // BUT: Although we have a JOIN query, extbase still just replaces "*" with "COUNT(*)" instead of COUNT(DISTINCT table.uid).
         // Because of this known bug you get a COUNT result of categories FOR EACH product.
         // So, COUNT will return 3 for the first product with 3 related categories instead of the amount of product records.
@@ -267,7 +268,6 @@ class ProductRepository extends Repository
 
             $translatedProduct['categories'] = [];
             while ($category = $resultCategories->fetchAssociative()) {
-                DebuggerUtility::var_dump($category, 'Category');
                 $categoryInDefaultLanguage = $pageRepository->getRawRecord(
                     'sys_category',
                     (int)($category['l10n_parent'] ?: $category['uid'])
@@ -323,6 +323,79 @@ class ProductRepository extends Repository
         }
 
         return $products;
+    }
+
+    public function findWithCategoryQueryBuilderExtbaseSolution(): QueryResultInterface
+    {
+        /** @var Query $query */
+        $query = $this->createQuery();
+        $queryBuilder = $this->getConnectionPool()->getQueryBuilderForTable('tx_sfjoin_domain_model_product');
+        $queryBuilder
+            ->select('p.uid')
+            ->from('tx_sfjoin_domain_model_product', 'p')
+            ->join(
+                'p',
+                'sys_category_record_mm',
+                'sc_mm',
+                (string)$queryBuilder->expr()->and(
+                    $queryBuilder->expr()->eq(
+                        'sc_mm.tablenames',
+                        $queryBuilder->createNamedParameter('tx_sfjoin_domain_model_product')
+                    ),
+                    $queryBuilder->expr()->eq(
+                        'sc_mm.fieldname',
+                        $queryBuilder->createNamedParameter('categories')
+                    ),
+                    $queryBuilder->expr()->eq(
+                        'sc_mm.uid_foreign',
+                        $queryBuilder->quoteIdentifier('p.uid')
+                    )
+                )
+            )
+            ->where(
+                $queryBuilder->expr()->isNotNull(
+                    'sc_mm.uid_local'
+                )
+            );
+
+        // The FE Restiction does not reduce the products to configured PIDs
+        // We have to set them on our own:
+        $queryBuilder->andWhere(
+            $queryBuilder->expr()->in(
+                'pid',
+                $queryBuilder->createNamedParameter($query->getQuerySettings()->getStoragePageIds(), Connection::PARAM_INT_ARRAY)
+            )
+        );
+
+        return $query->matching($query->in('uid', $queryBuilder->executeQuery()->fetchAllAssociative()))->execute();
+    }
+
+    /**
+     * Extend Extbase Query with SELECT and GROUP BY
+     */
+    public function findWithCategoryExtbaseSolution(): array
+    {
+        $query = $this->createQuery();
+        $queryParser = GeneralUtility::makeInstance(Typo3DbQueryParser::class);
+        $query = $query->matching(
+            $query->logicalNot($query->equals('categories.uid', null))
+        );
+
+        $queryBuilderWithAllKindsOfOverlayIncluded = $queryParser->convertQueryToDoctrineQueryBuilder($query);
+        $queryBuilderWithAllKindsOfOverlayIncluded->select(
+            'tx_sfjoin_domain_model_product.uid',
+            'tx_sfjoin_domain_model_product.pid',
+            'tx_sfjoin_domain_model_product.title'
+        );
+        $queryBuilderWithAllKindsOfOverlayIncluded->groupBy(
+            'tx_sfjoin_domain_model_product.uid',
+            'tx_sfjoin_domain_model_product.pid',
+            'tx_sfjoin_domain_model_product.title'
+        );
+        $queryBuilderWithAllKindsOfOverlayIncluded->setMaxResults(15);
+        $queryBuilderWithAllKindsOfOverlayIncluded->setFirstResult(0);
+
+        return $queryBuilderWithAllKindsOfOverlayIncluded->executeQuery()->fetchAllAssociative();
     }
 
     private function getLanguageStatement(

@@ -21,14 +21,23 @@ class Product extends AbstractEntity
 {
     protected string $title = '';
 
+    protected int $maxTimestamp = 0;
+
     /**
      * @var ObjectStorage<Category>|null
      */
     protected $categories = null;
 
+    /**
+     * @var ObjectStorage<Property>|null
+     * @TYPO3\CMS\Extbase\Annotation\ORM\Cascade("remove")
+     */
+    protected $properties = null;
+
     public function __construct()
     {
         $this->categories = new ObjectStorage();
+        $this->properties = new ObjectStorage();
     }
 
     /**
@@ -37,6 +46,7 @@ class Product extends AbstractEntity
     public function initializeObject()
     {
         $this->categories = new ObjectStorage();
+        $this->properties = new ObjectStorage();
     }
 
     public function getTitle(): string
@@ -47,6 +57,16 @@ class Product extends AbstractEntity
     public function setTitle(string $title): void
     {
         $this->title = $title;
+    }
+
+    public function getMaxTimestamp(): int
+    {
+        return $this->maxTimestamp;
+    }
+
+    public function setMaxTimestamp(int $maxTimestamp): void
+    {
+        $this->maxTimestamp = $maxTimestamp;
     }
 
     /**
@@ -60,5 +80,18 @@ class Product extends AbstractEntity
     public function setCategories(ObjectStorage $categories): void
     {
         $this->categories = $categories;
+    }
+
+    /**
+     * @return ObjectStorage|Property[]
+     */
+    public function getProperties(): ObjectStorage
+    {
+        return $this->properties;
+    }
+
+    public function setProperties(ObjectStorage $properties): void
+    {
+        $this->properties = $properties;
     }
 }
